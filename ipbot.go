@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -10,17 +9,17 @@ import (
 	"os/signal"
 	"slices"
 	"syscall"
+    "strings"
 
 	"github.com/bwmarrin/discordgo"
 )
 
-type authUserFlags []string
-
 type commandHandler func(*discordgo.Session, *discordgo.MessageCreate) error
 
 var (
-    apiToken = flag.String("token", "", "Discord API Token.")
-    authUsers authUserFlags
+    apiTokenEnv = os.Getenv("IPBOT_TOKEN")
+    authUsersEnv = os.Getenv("IPBOT_AUTH_USERS")
+    authUsers []string
 
     commands = map[string]commandHandler {
         "!ping": func(s *discordgo.Session, m *discordgo.MessageCreate) error {
@@ -46,24 +45,21 @@ var (
     }
 )
 
-func (f *authUserFlags) String() string {
-    return fmt.Sprintf("%v", *f)
-}
-
-func (f *authUserFlags) Set(value string) error {
-    *f = append(*f, value)
-    return nil
+func splitUsers(r rune) bool {
+    return r == ':' || r == ',' || r == ';'
 }
 
 func main() {
-    flag.Var(&authUsers, "auth", "Append Username to authorized users list.")
-    flag.Parse()
-
-    if len(*apiToken) == 0 {
+    if len(apiTokenEnv) == 0 {
         log.Fatalln("IPBOT_TOKEN environemt variable not set.")
     }
 
-    dg, err := discordgo.New("Bot " + *apiToken)
+    authUsers = strings.FieldsFunc(authUsersEnv, splitUsers)
+    if len(authUsers) == 0 {
+        log.Println("No authorized users registered.")
+    }
+
+    dg, err := discordgo.New("Bot " + apiTokenEnv)
     if err != nil {
         log.Fatalln("Error creating Discord session:", err)
     }
