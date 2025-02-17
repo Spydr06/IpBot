@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+set -xe
+
+IPBOT_TOKEN="<your discord token>"
+IPBOT_AUTH_USERS="<autorized user ids>"
+
+go run .
+
